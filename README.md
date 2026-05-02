@@ -4,19 +4,18 @@
 [![npm downloads](https://img.shields.io/npm/dm/@okyrychenko-dev/react-action-guard-ui.svg)](https://www.npmjs.com/package/@okyrychenko-dev/react-action-guard-ui)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-> UI-agnostic guarded control primitives for React Action Guard - build accessible blocked buttons, fields, links, and groups without framework-specific adapters
+> Build accessible guarded buttons, fields, links, and groups on top of React Action Guard
 
-## Features
+`react-action-guard-ui` provides UI-agnostic hooks and state helpers for wiring blocking state into native controls, design systems, and component libraries without framework-specific adapters.
 
-- **Framework-Agnostic UI Primitives** - Works with native controls, design systems, and component libraries
-- **Scope-Based Blocking** - Connect controls to `react-action-guard` scopes with explicit props or inherited context
-- **Accessibility State Helpers** - Returns ARIA attributes such as `aria-busy`, `aria-disabled`, `aria-readonly`, and `aria-describedby`
-- **Typed State Mappers** - Function overloads support custom state shapes without type assertions
-- **Control Categories** - Hooks for actions, buttons, fields, links, and groups
-- **Reason Handling** - Display blocking reasons as visible text, helper text, descriptions, or keep them hidden
-- **Tree-Shakeable** - Import only the primitives and resolvers you need
-- **TypeScript-Friendly** - Strong return types for default and custom mapped states
-- **No Adapter Lock-In** - No MUI, HeroUI, Radix, or router dependency; wrap your own components locally
+## Why Use It
+
+- Convert `react-action-guard` blockers into accessible control state
+- Share blocking scopes through `GuardedScopeProvider` or explicit hook props
+- Build guarded buttons, fields, links, and groups without MUI, HeroUI, Radix, or router adapters
+- Expose blocking reasons as visible text, helper text, descriptions, or hidden state
+- Preserve custom component-library prop shapes with typed state mappers
+- Use resolver utilities directly when a hook is not the right abstraction
 
 ## Installation
 
@@ -63,9 +62,39 @@ function SaveButton() {
 }
 ```
 
-## Scope Usage
+## Core Concepts
 
-There are two supported ways to connect guarded controls to a blocking scope.
+- `GuardedScopeProvider` lets descendant hooks inherit a blocking scope through React context
+- Explicit `scope` props are useful for reusable controls, portals into separate React roots, and cross-domain UI
+- `useTopBlocker` returns the highest-priority blocker affecting a scope
+- `useGuardedAction`, `useGuardedButton`, `useGuardedField`, `useGuardedLink`, and `useGuardedGroup` convert blockers into UI-ready state
+- State resolvers are pure helpers for custom hooks, tests, and non-React wrappers
+
+Scope resolution priority:
+
+```txt
+explicit scope -> GuardedScopeProvider scope -> global
+```
+
+## Core Use Cases
+
+### Disable or show loading for actions
+
+Use `useGuardedAction` or `useGuardedButton` when a command, submit button, toolbar action, or menu item should react to active blockers.
+
+### Guard form controls
+
+Use `useGuardedField` for inputs, textareas, selects, checkboxes, switches, date pickers, and similar controls.
+
+### Prevent blocked navigation
+
+Use `useGuardedLink` when a link-like control should prevent navigation while a scope is blocked.
+
+### Describe blocked regions
+
+Use `useGuardedGroup` for forms, fieldsets, panels, cards, and sections that need container-level ARIA state or reason text.
+
+## Scope Usage
 
 ### Provider Scope
 
@@ -156,12 +185,6 @@ function SaveButton({ onSave, scope }: { onSave: () => Promise<void>; scope: str
 }
 ```
 
-Scope resolution priority:
-
-```txt
-explicit scope -> GuardedScopeProvider scope -> global
-```
-
 ## API Reference
 
 ### Scope Context
@@ -201,7 +224,7 @@ Returns blocker metadata for the highest-priority blocker affecting a scope.
 
 **Parameters:**
 
-- `scope?: string | readonly string[]` - Scope(s) to inspect. Defaults to global behavior when omitted.
+- `scope?: string | readonly string[]` - Scope or scopes to inspect. Defaults to global behavior when omitted.
 
 **Returns:**
 
@@ -217,7 +240,7 @@ Generic action-control hook for commands, menu items, toolbar actions, and click
 
 **Options:**
 
-- `scope?: string | readonly string[]` - Blocking scope(s)
+- `scope?: string | readonly string[]` - Blocking scope or scopes
 - `blockedState?: "disabled" | "loading" | "none"` - How blocked state affects the control (default: `"disabled"`)
 - `disabled?: boolean` - Existing disabled state to merge with blocking state
 - `loading?: boolean` - Existing loading state to merge with blocking state
@@ -234,7 +257,7 @@ Button-oriented action hook. It accepts the same options as `useGuardedAction`, 
 
 **Options:**
 
-- `scope?: string | readonly string[]` - Blocking scope(s)
+- `scope?: string | readonly string[]` - Blocking scope or scopes
 - `blockedState?: "disabled" | "loading" | "none"` - How blocked state affects the button (default: `"disabled"`)
 - `disabled?: boolean` - Existing disabled state to merge with blocking state
 - `loading?: boolean` - Existing loading state to merge with blocking state
@@ -245,7 +268,7 @@ Button-oriented action hook. It accepts the same options as `useGuardedAction`, 
 
 **Returns:** `{ blocker, isBlocked, buttonState, reasonContent, ariaDescribedBy }`
 
-Use this for native buttons, icon buttons, submit buttons, and design-system button components.
+**Example:**
 
 ```tsx
 const { buttonState, reasonContent } = useGuardedButton({
@@ -309,17 +332,19 @@ Group/container hook for forms, fieldsets, panels, cards, and sections.
 
 Use resolvers directly when you do not need React hooks or want to build your own wrapper hook.
 
+- `normalizeGuardedScope(scope?)`
 - `resolveGuardedActionState({ blockedState, isBlocked, disabled, loading })`
 - `resolveGuardedFieldState({ blockedState, isBlocked, disabled, readOnly, loading })`
 - `resolveGuardedLinkState({ isBlocked, disabled, removeFromTabOrder })`
 - `resolveGuardedGroupState(isBlocked)`
-- `normalizeGuardedScope(scope?)`
 
 ### Styles
 
 #### `visuallyHiddenClassName`
 
 Class name for screen-reader-only text. Prefer this when your project has a no-inline-styles rule.
+
+**Example:**
 
 ```tsx
 import { visuallyHiddenClassName } from "@okyrychenko-dev/react-action-guard-ui";
@@ -351,6 +376,8 @@ CSS text for the same class, useful when your styling system accepts injected gl
 #### `visuallyHiddenStyle`
 
 Reusable React `CSSProperties` object for environments where a class is not practical. Prefer `visuallyHiddenClassName` for app code that enforces no inline styles.
+
+**Example:**
 
 ```tsx
 <span style={visuallyHiddenStyle}>{reasonContent}</span>
@@ -387,11 +414,51 @@ const { buttonState } = useGuardedButton({
 // { isDisabled: boolean; isLoading: boolean; "aria-busy": true | undefined }
 ```
 
-## Design Philosophy
+## Package Philosophy
 
-This package intentionally stops at primitives. It does not export `MuiGuardedButton`, `HeroUIGuardedSelect`, or similar adapters because those APIs change independently and rarely cover every control a real app needs.
+This package intentionally stops at UI primitives. It does not ship MUI, HeroUI, Radix, router, or design-system adapters because those APIs change independently and cannot cover every control a real app needs.
 
-Instead, build small local wrappers around your own components using the hooks above. The library handles blocking semantics, priority, reasons, and ARIA state; your app owns component-library props and visuals.
+Instead, build small local wrappers around your own components. The library owns blocking semantics, priority, reasons, and ARIA state; your app owns component-library props and visuals.
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Run tests
+npm run test
+
+# Run tests with coverage
+npm run test:coverage
+
+# Build the package
+npm run build
+
+# Type checking
+npm run typecheck
+
+# Lint code
+npm run lint
+
+# Fix lint errors
+npm run lint:fix
+
+# Format code
+npm run format
+
+# Watch mode for development
+npm run dev
+```
+
+## Contributing
+
+Contributions are welcome! Please ensure:
+
+1. All tests pass (`npm run test`)
+2. Code is properly typed (`npm run typecheck`)
+3. Linting passes (`npm run lint`)
+4. Code is formatted (`npm run format`)
 
 ## License
 
