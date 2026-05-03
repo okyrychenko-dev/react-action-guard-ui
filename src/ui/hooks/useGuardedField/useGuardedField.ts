@@ -1,7 +1,6 @@
-import { useMemo } from "react";
-import { useResolvedGuardedScope } from "../../context";
+import { useCallback } from "react";
 import { resolveFieldReason, resolveGuardedFieldState } from "../../utils";
-import { useTopBlocker } from "../useTopBlocker";
+import { useGuardedControl } from "../useGuardedControl";
 import type { GuardedFieldState } from "../../types";
 import type {
   UseGuardedFieldParams,
@@ -22,7 +21,7 @@ export function useGuardedField<TFieldState>(
 ): UseGuardedFieldReturn<TFieldState>;
 export function useGuardedField<TFieldState>(
   params: UseGuardedFieldParams<TFieldState> = {},
-): UseGuardedFieldReturn | UseGuardedFieldReturn<TFieldState> {
+): UseGuardedFieldReturn<GuardedFieldState | TFieldState> {
   const {
     blockedState = "disabled",
     disabled,
@@ -34,47 +33,34 @@ export function useGuardedField<TFieldState>(
     reasonMode = "hidden",
     scope,
   } = params;
-  const resolvedScope = useResolvedGuardedScope(scope);
-  const blocker = useTopBlocker(resolvedScope);
 
-  const baseFieldState = useMemo(
-    () =>
+  const resolveState = useCallback(
+    (isBlocked: boolean) =>
       resolveGuardedFieldState({
         blockedState,
         disabled,
-        isBlocked: blocker.isBlocked,
+        isBlocked,
         loading,
         readOnly,
       }),
-    [blockedState, blocker.isBlocked, disabled, loading, readOnly],
+    [blockedState, disabled, loading, readOnly],
   );
 
-  const reason = useMemo(
-    () =>
-      resolveFieldReason({
-        blocker,
-        fallback: reasonFallback,
-        mode: reasonMode,
-        reasonId,
-      }),
-    [blocker, reasonFallback, reasonId, reasonMode],
-  );
-
-  if (getFieldState) {
-    return {
-      blocker,
-      isBlocked: blocker.isBlocked,
-      fieldState: getFieldState(baseFieldState),
-      reasonContent: reason.reasonContent,
-      ariaDescribedBy: reason.ariaDescribedBy,
-    };
-  }
+  const control = useGuardedControl({
+    getControlState: getFieldState,
+    reasonFallback,
+    reasonId,
+    reasonMode,
+    resolveReason: resolveFieldReason,
+    resolveState,
+    scope,
+  });
 
   return {
-    blocker,
-    isBlocked: blocker.isBlocked,
-    fieldState: baseFieldState,
-    reasonContent: reason.reasonContent,
-    ariaDescribedBy: reason.ariaDescribedBy,
+    blocker: control.blocker,
+    isBlocked: control.isBlocked,
+    fieldState: control.controlState,
+    reasonContent: control.reasonContent,
+    ariaDescribedBy: control.ariaDescribedBy,
   };
 }

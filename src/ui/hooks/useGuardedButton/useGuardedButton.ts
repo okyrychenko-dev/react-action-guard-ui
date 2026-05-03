@@ -1,7 +1,6 @@
-import { useMemo } from "react";
-import { useResolvedGuardedScope } from "../../context";
+import { useCallback } from "react";
 import { resolveActionReason, resolveGuardedActionState } from "../../utils";
-import { useTopBlocker } from "../useTopBlocker";
+import { useGuardedControl } from "../useGuardedControl";
 import type { GuardedActionState } from "../../types";
 import type {
   UseGuardedButtonParams,
@@ -22,7 +21,7 @@ export function useGuardedButton<TButtonState>(
 ): UseGuardedButtonReturn<TButtonState>;
 export function useGuardedButton<TButtonState>(
   params: UseGuardedButtonParams<TButtonState> = {},
-): UseGuardedButtonReturn | UseGuardedButtonReturn<TButtonState> {
+): UseGuardedButtonReturn<GuardedActionState | TButtonState> {
   const {
     blockedState = "disabled",
     disabled,
@@ -33,46 +32,33 @@ export function useGuardedButton<TButtonState>(
     reasonMode = "hidden",
     scope,
   } = params;
-  const resolvedScope = useResolvedGuardedScope(scope);
-  const blocker = useTopBlocker(resolvedScope);
 
-  const baseButtonState = useMemo(
-    () =>
+  const resolveState = useCallback(
+    (isBlocked: boolean) =>
       resolveGuardedActionState({
         blockedState,
         disabled,
-        isBlocked: blocker.isBlocked,
+        isBlocked,
         loading,
       }),
-    [blockedState, blocker.isBlocked, disabled, loading],
+    [blockedState, disabled, loading],
   );
 
-  const reason = useMemo(
-    () =>
-      resolveActionReason({
-        blocker,
-        fallback: reasonFallback,
-        mode: reasonMode,
-        reasonId,
-      }),
-    [blocker, reasonFallback, reasonId, reasonMode],
-  );
-
-  if (getButtonState) {
-    return {
-      blocker,
-      isBlocked: blocker.isBlocked,
-      buttonState: getButtonState(baseButtonState),
-      reasonContent: reason.reasonContent,
-      ariaDescribedBy: reason.ariaDescribedBy,
-    };
-  }
+  const control = useGuardedControl({
+    getControlState: getButtonState,
+    reasonFallback,
+    reasonId,
+    reasonMode,
+    resolveReason: resolveActionReason,
+    resolveState,
+    scope,
+  });
 
   return {
-    blocker,
-    isBlocked: blocker.isBlocked,
-    buttonState: baseButtonState,
-    reasonContent: reason.reasonContent,
-    ariaDescribedBy: reason.ariaDescribedBy,
+    blocker: control.blocker,
+    isBlocked: control.isBlocked,
+    buttonState: control.controlState,
+    reasonContent: control.reasonContent,
+    ariaDescribedBy: control.ariaDescribedBy,
   };
 }
