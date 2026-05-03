@@ -14,7 +14,7 @@ function mergeWithBlockedFlag(
   value: boolean | undefined,
   isBlocked: boolean,
 ): boolean {
-  return value === true || isBlocked;
+  return (value ?? false) || isBlocked;
 }
 
 export function normalizeGuardedScope(
@@ -28,7 +28,7 @@ export function normalizeGuardedScope(
     return [scope];
   }
 
-  return Array.from(scope);
+  return scope;
 }
 
 export function resolveGuardedActionState(params: {

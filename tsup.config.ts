@@ -7,7 +7,7 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   clean: true,
-  external: ["@okyrychenko-dev/react-action-guard", "react", "zustand"],
+  external: ["@okyrychenko-dev/react-action-guard", "react"],
   treeshake: true,
   minify: false,
 });

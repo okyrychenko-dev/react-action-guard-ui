@@ -6,6 +6,7 @@ import {
   renderHook,
   screen,
 } from "@testing-library/react";
+import { type ReactNode, useEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GuardedScopeProvider } from "../context";
 import {
@@ -16,7 +17,6 @@ import {
   useGuardedLink,
   useTopBlocker,
 } from "../hooks";
-import type { ReactNode } from "react";
 
 describe("guarded ui hooks", () => {
   beforeEach(() => {
@@ -200,5 +200,199 @@ describe("guarded ui hooks", () => {
       false,
     );
     expect(handleClick).not.toHaveBeenCalled();
+  });
+
+  it("should match blockers with multiple scopes", () => {
+    act(() => {
+      uiBlockingStoreApi.getState().addBlocker("multi-scope", {
+        scope: ["profile", "billing"],
+        reason: "Saving account",
+      });
+    });
+
+    const { result } = renderHook(() => useTopBlocker("billing"));
+
+    expect(result.current.isBlocked).toBe(true);
+    expect(result.current.topBlocker?.id).toBe("multi-scope");
+  });
+
+  it("should preserve user disabled state when blocked state is none", () => {
+    act(() => {
+      uiBlockingStoreApi.getState().addBlocker("save", {
+        scope: "profile",
+      });
+    });
+
+    const { result } = renderHook(() =>
+      useGuardedButton({
+        blockedState: "none",
+        disabled: true,
+        scope: "profile",
+      }),
+    );
+
+    expect(result.current.isBlocked).toBe(true);
+    expect(result.current.buttonState.disabled).toBe(true);
+    expect(result.current.buttonState.loading).toBe(false);
+    expect(result.current.buttonState.ariaDisabled).toBe(true);
+    expect(result.current.buttonState.ariaBusy).toBeUndefined();
+  });
+
+  it("should map guarded button state with a custom resolver", () => {
+    act(() => {
+      uiBlockingStoreApi.getState().addBlocker("save", {
+        scope: "profile",
+      });
+    });
+
+    const { result } = renderHook(() =>
+      useGuardedButton({
+        blockedState: "loading",
+        scope: "profile",
+        getButtonState: (state) => ({
+          busy: state.loading,
+          disabled: state.disabled,
+        }),
+      }),
+    );
+
+    expect(result.current.buttonState).toEqual({
+      busy: true,
+      disabled: true,
+    });
+  });
+
+  it("should map guarded field state with a custom resolver", () => {
+    act(() => {
+      uiBlockingStoreApi.getState().addBlocker("email", {
+        scope: "profile",
+      });
+    });
+
+    const { result } = renderHook(() =>
+      useGuardedField({
+        blockedState: "readOnly",
+        scope: "profile",
+        getFieldState: (state) => ({
+          disabled: state.disabled,
+          locked: state.readOnly,
+        }),
+      }),
+    );
+
+    expect(result.current.fieldState).toEqual({
+      disabled: false,
+      locked: true,
+    });
+  });
+
+  it("should stop guarded link click propagation while blocked", () => {
+    const handleParentClick = vi.fn();
+    const handleClick = vi.fn();
+
+    act(() => {
+      uiBlockingStoreApi.getState().addBlocker("navigation", {
+        scope: "navigation",
+      });
+    });
+
+    function GuardedLinkExample(): ReactNode {
+      const { linkState, onClick } = useGuardedLink({
+        scope: "navigation",
+        onClick: handleClick,
+        stopPropagationWhenBlocked: true,
+      });
+
+      return (
+        <div onClick={handleParentClick}>
+          <a
+            href="/next"
+            aria-disabled={linkState.ariaDisabled}
+            onClick={onClick}
+          >
+            Next
+          </a>
+        </div>
+      );
+    }
+
+    render(<GuardedLinkExample />);
+
+    expect(fireEvent.click(screen.getByRole("link", { name: "Next" }))).toBe(
+      false,
+    );
+    expect(handleClick).not.toHaveBeenCalled();
+    expect(handleParentClick).not.toHaveBeenCalled();
+  });
+
+  it("should render guarded button aria attributes in the DOM", () => {
+    act(() => {
+      uiBlockingStoreApi.getState().addBlocker("submit", {
+        scope: "profile",
+      });
+    });
+
+    function GuardedButtonExample(): ReactNode {
+      const { buttonState } = useGuardedButton({
+        blockedState: "loading",
+        scope: "profile",
+      });
+
+      return (
+        <button
+          type="button"
+          aria-busy={buttonState.ariaBusy}
+          aria-disabled={buttonState.ariaDisabled}
+          disabled={buttonState.disabled}
+        >
+          Save
+        </button>
+      );
+    }
+
+    render(<GuardedButtonExample />);
+
+    const button = screen.getByRole("button", { name: "Save" });
+
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-busy", "true");
+    expect(button).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("should keep guarded action references stable across parent rerenders", () => {
+    const handleActionStateChange = vi.fn();
+    const handleBlockerChange = vi.fn();
+
+    act(() => {
+      uiBlockingStoreApi.getState().addBlocker("save", {
+        scope: "profile",
+      });
+    });
+
+    function GuardedActionExample({ tick }: { tick: number }): ReactNode {
+      const { actionState, blocker } = useGuardedAction({
+        scope: "profile",
+      });
+
+      useEffect(() => {
+        handleActionStateChange(actionState);
+      }, [actionState]);
+
+      useEffect(() => {
+        handleBlockerChange(blocker);
+      }, [blocker]);
+
+      return <button data-tick={tick}>Save</button>;
+    }
+
+    const { rerender } = render(<GuardedActionExample tick={1} />);
+
+    expect(handleActionStateChange).toHaveBeenCalledTimes(1);
+    expect(handleBlockerChange).toHaveBeenCalledTimes(1);
+
+    rerender(<GuardedActionExample tick={2} />);
+
+    expect(handleActionStateChange).toHaveBeenCalledTimes(1);
+    expect(handleBlockerChange).toHaveBeenCalledTimes(1);
   });
 });

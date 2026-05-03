@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useResolvedGuardedScope } from "../../context";
 import { resolveFieldReason, resolveGuardedFieldState } from "../../utils";
 import { useTopBlocker } from "../useTopBlocker";
@@ -36,20 +37,28 @@ export function useGuardedField<TFieldState>(
   const resolvedScope = useResolvedGuardedScope(scope);
   const blocker = useTopBlocker(resolvedScope);
 
-  const baseFieldState = resolveGuardedFieldState({
-    blockedState,
-    disabled,
-    isBlocked: blocker.isBlocked,
-    loading,
-    readOnly,
-  });
+  const baseFieldState = useMemo(
+    () =>
+      resolveGuardedFieldState({
+        blockedState,
+        disabled,
+        isBlocked: blocker.isBlocked,
+        loading,
+        readOnly,
+      }),
+    [blockedState, blocker.isBlocked, disabled, loading, readOnly],
+  );
 
-  const reason = resolveFieldReason({
-    blocker,
-    fallback: reasonFallback,
-    mode: reasonMode,
-    reasonId,
-  });
+  const reason = useMemo(
+    () =>
+      resolveFieldReason({
+        blocker,
+        fallback: reasonFallback,
+        mode: reasonMode,
+        reasonId,
+      }),
+    [blocker, reasonFallback, reasonId, reasonMode],
+  );
 
   if (getFieldState) {
     return {

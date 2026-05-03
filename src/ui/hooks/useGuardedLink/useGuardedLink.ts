@@ -1,4 +1,4 @@
-import { type MouseEvent, useCallback } from "react";
+import { type MouseEvent, useCallback, useMemo } from "react";
 import { useResolvedGuardedScope } from "../../context";
 import { resolveActionReason, resolveGuardedLinkState } from "../../utils";
 import { useTopBlocker } from "../useTopBlocker";
@@ -23,11 +23,15 @@ export function useGuardedLink<
   const resolvedScope = useResolvedGuardedScope(scope);
   const blocker = useTopBlocker(resolvedScope);
 
-  const linkState = resolveGuardedLinkState({
-    disabled,
-    isBlocked: blocker.isBlocked,
-    removeFromTabOrder,
-  });
+  const linkState = useMemo(
+    () =>
+      resolveGuardedLinkState({
+        disabled,
+        isBlocked: blocker.isBlocked,
+        removeFromTabOrder,
+      }),
+    [blocker.isBlocked, disabled, removeFromTabOrder],
+  );
 
   const handleClick = useCallback(
     (e: MouseEvent<TElement>) => {
@@ -46,12 +50,16 @@ export function useGuardedLink<
     [linkState.onClickShouldPrevent, onClick, stopPropagationWhenBlocked],
   );
 
-  const reason = resolveActionReason({
-    blocker,
-    fallback: reasonFallback,
-    mode: reasonMode,
-    reasonId,
-  });
+  const reason = useMemo(
+    () =>
+      resolveActionReason({
+        blocker,
+        fallback: reasonFallback,
+        mode: reasonMode,
+        reasonId,
+      }),
+    [blocker, reasonFallback, reasonId, reasonMode],
+  );
 
   return {
     blocker,

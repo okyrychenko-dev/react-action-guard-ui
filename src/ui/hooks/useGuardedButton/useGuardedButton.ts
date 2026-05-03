@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useResolvedGuardedScope } from "../../context";
 import { resolveActionReason, resolveGuardedActionState } from "../../utils";
 import { useTopBlocker } from "../useTopBlocker";
@@ -35,19 +36,27 @@ export function useGuardedButton<TButtonState>(
   const resolvedScope = useResolvedGuardedScope(scope);
   const blocker = useTopBlocker(resolvedScope);
 
-  const baseButtonState = resolveGuardedActionState({
-    blockedState,
-    disabled,
-    isBlocked: blocker.isBlocked,
-    loading,
-  });
+  const baseButtonState = useMemo(
+    () =>
+      resolveGuardedActionState({
+        blockedState,
+        disabled,
+        isBlocked: blocker.isBlocked,
+        loading,
+      }),
+    [blockedState, blocker.isBlocked, disabled, loading],
+  );
 
-  const reason = resolveActionReason({
-    blocker,
-    fallback: reasonFallback,
-    mode: reasonMode,
-    reasonId,
-  });
+  const reason = useMemo(
+    () =>
+      resolveActionReason({
+        blocker,
+        fallback: reasonFallback,
+        mode: reasonMode,
+        reasonId,
+      }),
+    [blocker, reasonFallback, reasonId, reasonMode],
+  );
 
   if (getButtonState) {
     return {

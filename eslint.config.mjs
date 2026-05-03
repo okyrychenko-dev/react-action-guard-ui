@@ -52,8 +52,8 @@ export default [
       "sort-imports": [
         "error",
         {
-          ignoreDeclarationSort: true, // строки сортирует import/order
-          ignoreMemberSort: false, // а внутри {} сортируем
+          ignoreDeclarationSort: true,
+          ignoreMemberSort: false,
           allowSeparatedGroups: true,
         },
       ],

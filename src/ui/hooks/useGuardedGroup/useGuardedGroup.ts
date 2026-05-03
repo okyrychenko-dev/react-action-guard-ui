@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useResolvedGuardedScope } from "../../context";
 import { resolveActionReason, resolveGuardedGroupState } from "../../utils";
 import { useTopBlocker } from "../useTopBlocker";
@@ -12,14 +13,21 @@ export function useGuardedGroup(
   const { reasonFallback, reasonId, reasonMode = "hidden", scope } = params;
   const resolvedScope = useResolvedGuardedScope(scope);
   const blocker = useTopBlocker(resolvedScope);
-  const groupState = resolveGuardedGroupState(blocker.isBlocked);
+  const groupState = useMemo(
+    () => resolveGuardedGroupState(blocker.isBlocked),
+    [blocker.isBlocked],
+  );
 
-  const reason = resolveActionReason({
-    blocker,
-    fallback: reasonFallback,
-    mode: reasonMode,
-    reasonId,
-  });
+  const reason = useMemo(
+    () =>
+      resolveActionReason({
+        blocker,
+        fallback: reasonFallback,
+        mode: reasonMode,
+        reasonId,
+      }),
+    [blocker, reasonFallback, reasonId, reasonMode],
+  );
 
   return {
     blocker,
