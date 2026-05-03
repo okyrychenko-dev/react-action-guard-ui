@@ -460,6 +460,10 @@ Contributions are welcome! Please ensure:
 3. Linting passes (`npm run lint`)
 4. Code is formatted (`npm run format`)
 
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for a detailed list of changes in each version.
+
 ## License
 
 MIT © Oleksii Kyrychenko
