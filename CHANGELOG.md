@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-05-09
+
+### Fixed
+
+- Stabilized normalized guarded scope references for inline array scopes across parent rerenders.
+- Memoized guarded control hook return values so design-system consumers do not receive avoidably new references.
+- Added regression coverage for inline array scopes and guarded button rerenders.
+
 ## [0.1.2] - 2026-05-03
 
 ### Changed
@@ -50,7 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `@okyrychenko-dev/react-action-guard` ^1.0.2
   - `react` ^18.0.0 || ^19.0.0
 
-[Unreleased]: https://github.com/okyrychenko-dev/react-action-guard-ui/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/okyrychenko-dev/react-action-guard-ui/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/okyrychenko-dev/react-action-guard-ui/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/okyrychenko-dev/react-action-guard-ui/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/okyrychenko-dev/react-action-guard-ui/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/okyrychenko-dev/react-action-guard-ui/releases/tag/v0.1.0

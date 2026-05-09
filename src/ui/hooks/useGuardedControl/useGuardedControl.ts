@@ -73,11 +73,19 @@ export function useGuardedControl<
     [blocker, reasonFallback, reasonId, reasonMode, resolveReason],
   );
 
-  return {
-    blocker,
-    isBlocked: blocker.isBlocked,
-    controlState,
-    reasonContent: reason.reasonContent,
-    ariaDescribedBy: reason.ariaDescribedBy,
-  };
+  return useMemo(
+    () => ({
+      blocker,
+      isBlocked: blocker.isBlocked,
+      controlState,
+      reasonContent: reason.reasonContent,
+      ariaDescribedBy: reason.ariaDescribedBy,
+    }),
+    [
+      blocker,
+      controlState,
+      reason.ariaDescribedBy,
+      reason.reasonContent,
+    ],
+  );
 }

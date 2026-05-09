@@ -395,4 +395,35 @@ describe("guarded ui hooks", () => {
     expect(handleActionStateChange).toHaveBeenCalledTimes(1);
     expect(handleBlockerChange).toHaveBeenCalledTimes(1);
   });
+
+  it("should keep guarded button state stable with inline array scope across parent rerenders", () => {
+    const handleButtonStateChange = vi.fn();
+
+    act(() => {
+      uiBlockingStoreApi.getState().addBlocker("save", {
+        scope: ["profile", "billing"],
+      });
+    });
+
+    function GuardedButtonExample({ tick }: { tick: number }): ReactNode {
+      const { buttonState } = useGuardedButton({
+        blockedState: "loading",
+        scope: ["profile", "billing"],
+      });
+
+      useEffect(() => {
+        handleButtonStateChange(buttonState);
+      }, [buttonState]);
+
+      return <button data-tick={tick}>Save</button>;
+    }
+
+    const { rerender } = render(<GuardedButtonExample tick={1} />);
+
+    expect(handleButtonStateChange).toHaveBeenCalledTimes(1);
+
+    rerender(<GuardedButtonExample tick={2} />);
+
+    expect(handleButtonStateChange).toHaveBeenCalledTimes(1);
+  });
 });

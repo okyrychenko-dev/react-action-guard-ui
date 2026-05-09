@@ -10,6 +10,8 @@ import type {
   GuardedScope,
 } from "../types";
 
+const normalizedScopeCache = new Map<string, ReadonlyArray<string>>();
+
 function mergeWithBlockedFlag(
   value: boolean | undefined,
   isBlocked: boolean,
@@ -17,18 +19,39 @@ function mergeWithBlockedFlag(
   return (value ?? false) || isBlocked;
 }
 
+function getNormalizedScopeCacheKey(scopes: ReadonlyArray<string>): string {
+  return JSON.stringify(scopes);
+}
+
+function getCachedNormalizedScope(
+  scopes: ReadonlyArray<string>,
+): ReadonlyArray<string> {
+  const cacheKey = getNormalizedScopeCacheKey(scopes);
+  const cachedScope = normalizedScopeCache.get(cacheKey);
+
+  if (cachedScope !== undefined) {
+    return cachedScope;
+  }
+
+  const normalizedScope = [...scopes];
+
+  normalizedScopeCache.set(cacheKey, normalizedScope);
+
+  return normalizedScope;
+}
+
 export function normalizeGuardedScope(
   scope?: GuardedScope,
 ): ReadonlyArray<string> {
   if (scope === undefined) {
-    return [DEFAULT_GUARDED_SCOPE];
+    return getCachedNormalizedScope([DEFAULT_GUARDED_SCOPE]);
   }
 
   if (typeof scope === "string") {
-    return [scope];
+    return getCachedNormalizedScope([scope]);
   }
 
-  return scope;
+  return getCachedNormalizedScope(scope);
 }
 
 export function resolveGuardedActionState(params: {
