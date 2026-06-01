@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-06-01
+
+### Fixed
+
+- 🔁 Made guarded scope normalization order-insensitive by deduplicating and sorting scope lists, so `['a','b']` and `['b','a']` resolve to the same cached entry.
+- 🧠 Bounded the normalized scope cache with an LRU eviction policy (max 256 entries) to prevent unbounded memory growth.
+
+### Changed
+
+- ♻️ Derived `useGuardedLink` and `useGuardedButton` from the shared `useGuardedControl` hook to remove duplicated blocking and reason logic. Public return shapes are unchanged.
+
+### Added
+
+- 🧩 Exported the `GuardedReasonBlocker` type for custom reason resolvers.
+- 🧪 Added regression coverage for guarded link behavior (click prevention, tab order, propagation, ARIA reason wiring) and scope normalization.
+
 ## [0.1.4] - 2026-05-27
 
 ### Changed
@@ -65,7 +81,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `@okyrychenko-dev/react-action-guard` ^1.0.4
   - `react` ^18.0.0 || ^19.0.0
 
-[Unreleased]: https://github.com/okyrychenko-dev/react-action-guard-ui/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/okyrychenko-dev/react-action-guard-ui/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/okyrychenko-dev/react-action-guard-ui/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/okyrychenko-dev/react-action-guard-ui/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/okyrychenko-dev/react-action-guard-ui/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/okyrychenko-dev/react-action-guard-ui/compare/v0.1.1...v0.1.2
