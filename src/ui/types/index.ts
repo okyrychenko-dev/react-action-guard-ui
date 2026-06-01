@@ -5,6 +5,7 @@ export type { GuardedLinkState } from "./link";
 export type {
   GuardedFieldReasonMode,
   GuardedFieldReasonProps,
+  GuardedReasonBlocker,
   GuardedReasonMode,
   GuardedReasonProps,
   GuardedReasonResult,

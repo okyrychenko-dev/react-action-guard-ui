@@ -73,6 +73,7 @@ describe("guarded ui hooks", () => {
       () =>
         useGuardedField({
           blockedState: "readOnly",
+          reasonId: "profile-blocked-reason",
           reasonMode: "helperText",
         }),
       { wrapper },
@@ -80,6 +81,7 @@ describe("guarded ui hooks", () => {
 
     expect(result.current.isBlocked).toBe(true);
     expect(result.current.fieldState.readOnly).toBe(true);
+    expect(result.current.ariaDescribedBy).toBe("profile-blocked-reason");
     expect(result.current.reasonContent).toBe("Saving profile");
   });
 

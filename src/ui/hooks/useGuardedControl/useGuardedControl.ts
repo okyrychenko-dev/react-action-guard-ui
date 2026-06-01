@@ -57,20 +57,31 @@ export function useGuardedControl<
     [blocker.isBlocked, resolveState],
   );
 
-  const controlState = useMemo(
-    () => (getControlState ? getControlState(baseState) : baseState),
-    [baseState, getControlState],
+  const controlState = useMemo(() => {
+    if (getControlState === undefined) {
+      return baseState;
+    }
+
+    return getControlState(baseState);
+  }, [baseState, getControlState]);
+
+  const reasonBlocker = useMemo(
+    () => ({
+      isBlocked: blocker.isBlocked,
+      reason: blocker.reason,
+    }),
+    [blocker.isBlocked, blocker.reason],
   );
 
   const reason = useMemo(
     () =>
       resolveReason({
-        blocker,
+        blocker: reasonBlocker,
         fallback: reasonFallback,
         mode: reasonMode,
         reasonId,
       }),
-    [blocker, reasonFallback, reasonId, reasonMode, resolveReason],
+    [reasonBlocker, reasonFallback, reasonId, reasonMode, resolveReason],
   );
 
   return useMemo(
@@ -81,11 +92,6 @@ export function useGuardedControl<
       reasonContent: reason.reasonContent,
       ariaDescribedBy: reason.ariaDescribedBy,
     }),
-    [
-      blocker,
-      controlState,
-      reason.ariaDescribedBy,
-      reason.reasonContent,
-    ],
+    [blocker, controlState, reason.ariaDescribedBy, reason.reasonContent],
   );
 }

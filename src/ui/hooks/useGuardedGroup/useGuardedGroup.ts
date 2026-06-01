@@ -1,7 +1,6 @@
-import { useMemo } from "react";
-import { useResolvedGuardedScope } from "../../context";
+import { useCallback } from "react";
 import { resolveActionReason, resolveGuardedGroupState } from "../../utils";
-import { useTopBlocker } from "../useTopBlocker";
+import { useGuardedControl } from "../useGuardedControl";
 import type {
   UseGuardedGroupParams,
   UseGuardedGroupReturn,
@@ -11,29 +10,25 @@ export function useGuardedGroup(
   params: UseGuardedGroupParams = {},
 ): UseGuardedGroupReturn {
   const { reasonFallback, reasonId, reasonMode = "hidden", scope } = params;
-  const resolvedScope = useResolvedGuardedScope(scope);
-  const blocker = useTopBlocker(resolvedScope);
-  const groupState = useMemo(
-    () => resolveGuardedGroupState(blocker.isBlocked),
-    [blocker.isBlocked],
+  const resolveState = useCallback(
+    (isBlocked: boolean) => resolveGuardedGroupState(isBlocked),
+    [],
   );
 
-  const reason = useMemo(
-    () =>
-      resolveActionReason({
-        blocker,
-        fallback: reasonFallback,
-        mode: reasonMode,
-        reasonId,
-      }),
-    [blocker, reasonFallback, reasonId, reasonMode],
-  );
+  const control = useGuardedControl({
+    reasonFallback,
+    reasonId,
+    reasonMode,
+    resolveReason: resolveActionReason,
+    resolveState,
+    scope,
+  });
 
   return {
-    blocker,
-    isBlocked: blocker.isBlocked,
-    groupState,
-    reasonContent: reason.reasonContent,
-    ariaDescribedBy: reason.ariaDescribedBy,
+    blocker: control.blocker,
+    isBlocked: control.isBlocked,
+    groupState: control.controlState,
+    reasonContent: control.reasonContent,
+    ariaDescribedBy: control.ariaDescribedBy,
   };
 }

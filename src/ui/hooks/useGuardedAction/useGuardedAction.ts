@@ -20,6 +20,9 @@ export function useGuardedAction<TActionState>(
   params: UseMappedGuardedActionParams<TActionState>,
 ): UseGuardedActionReturn<TActionState>;
 export function useGuardedAction<TActionState>(
+  params: UseGuardedActionParams<TActionState>,
+): UseGuardedActionReturn<GuardedActionState | TActionState>;
+export function useGuardedAction<TActionState>(
   params: UseGuardedActionParams<TActionState> = {},
 ): UseGuardedActionReturn<GuardedActionState | TActionState> {
   const {

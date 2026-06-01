@@ -11,6 +11,7 @@ import type {
 } from "../types";
 
 const normalizedScopeCache = new Map<string, ReadonlyArray<string>>();
+const NORMALIZED_SCOPE_CACHE_MAX_SIZE = 256;
 
 function mergeWithBlockedFlag(
   value: boolean | undefined,
@@ -19,8 +20,49 @@ function mergeWithBlockedFlag(
   return (value ?? false) || isBlocked;
 }
 
+function trueOrUndefined(value: boolean): true | undefined {
+  if (value) {
+    return true;
+  }
+
+  return undefined;
+}
+
+function blockedLinkTabIndex(
+  isDisabled: boolean,
+  removeFromTabOrder?: boolean,
+): -1 | undefined {
+  if (isDisabled && removeFromTabOrder === true) {
+    return -1;
+  }
+
+  return undefined;
+}
+
 function getNormalizedScopeCacheKey(scopes: ReadonlyArray<string>): string {
-  return JSON.stringify(scopes);
+  return JSON.stringify([...scopes].sort());
+}
+
+function normalizeScopeList(
+  scopes: ReadonlyArray<string>,
+): ReadonlyArray<string> {
+  return [...new Set(scopes)].sort();
+}
+
+function refreshNormalizedScopeCacheEntry(
+  cacheKey: string,
+  scopes: ReadonlyArray<string>,
+): ReadonlyArray<string> {
+  normalizedScopeCache.delete(cacheKey);
+  normalizedScopeCache.set(cacheKey, scopes);
+  return scopes;
+}
+
+function evictOldestNormalizedScopeCacheEntry(): void {
+  for (const cacheKey of normalizedScopeCache.keys()) {
+    normalizedScopeCache.delete(cacheKey);
+    break;
+  }
 }
 
 function getCachedNormalizedScope(
@@ -30,12 +72,16 @@ function getCachedNormalizedScope(
   const cachedScope = normalizedScopeCache.get(cacheKey);
 
   if (cachedScope !== undefined) {
-    return cachedScope;
+    return refreshNormalizedScopeCacheEntry(cacheKey, cachedScope);
   }
 
-  const normalizedScope = [...scopes];
+  const normalizedScope = normalizeScopeList(scopes);
 
   normalizedScopeCache.set(cacheKey, normalizedScope);
+
+  if (normalizedScopeCache.size > NORMALIZED_SCOPE_CACHE_MAX_SIZE) {
+    evictOldestNormalizedScopeCacheEntry();
+  }
 
   return normalizedScope;
 }
@@ -69,7 +115,7 @@ export function resolveGuardedActionState(params: {
         disabled: resolvedDisabled,
         loading: loading === true,
         ariaBusy: undefined,
-        ariaDisabled: resolvedDisabled ? true : undefined,
+        ariaDisabled: trueOrUndefined(resolvedDisabled),
       };
     }
     case "loading": {
@@ -78,16 +124,16 @@ export function resolveGuardedActionState(params: {
       return {
         disabled: resolvedDisabled,
         loading: resolvedLoading,
-        ariaBusy: resolvedLoading ? true : undefined,
-        ariaDisabled: resolvedDisabled ? true : undefined,
+        ariaBusy: trueOrUndefined(resolvedLoading),
+        ariaDisabled: trueOrUndefined(resolvedDisabled),
       };
     }
     case "none":
       return {
         disabled: disabled === true,
         loading: loading === true,
-        ariaBusy: loading === true ? true : undefined,
-        ariaDisabled: disabled === true ? true : undefined,
+        ariaBusy: trueOrUndefined(loading === true),
+        ariaDisabled: trueOrUndefined(disabled === true),
       };
     default:
       return assertNever(blockedState, "GuardedActionBlockedState");
@@ -110,9 +156,9 @@ export function resolveGuardedFieldState(params: {
         disabled: resolvedDisabled,
         readOnly: readOnly === true,
         loading: loading === true,
-        ariaBusy: loading === true ? true : undefined,
-        ariaDisabled: resolvedDisabled ? true : undefined,
-        ariaReadOnly: readOnly === true ? true : undefined,
+        ariaBusy: trueOrUndefined(loading === true),
+        ariaDisabled: trueOrUndefined(resolvedDisabled),
+        ariaReadOnly: trueOrUndefined(readOnly === true),
       };
     }
     case "readOnly": {
@@ -121,9 +167,9 @@ export function resolveGuardedFieldState(params: {
         disabled: disabled === true,
         readOnly: resolvedReadOnly,
         loading: loading === true,
-        ariaBusy: loading === true ? true : undefined,
-        ariaDisabled: disabled === true ? true : undefined,
-        ariaReadOnly: resolvedReadOnly ? true : undefined,
+        ariaBusy: trueOrUndefined(loading === true),
+        ariaDisabled: trueOrUndefined(disabled === true),
+        ariaReadOnly: trueOrUndefined(resolvedReadOnly),
       };
     }
     case "loading": {
@@ -133,9 +179,9 @@ export function resolveGuardedFieldState(params: {
         disabled: resolvedDisabled,
         readOnly: readOnly === true,
         loading: resolvedLoading,
-        ariaBusy: resolvedLoading ? true : undefined,
-        ariaDisabled: resolvedDisabled ? true : undefined,
-        ariaReadOnly: readOnly === true ? true : undefined,
+        ariaBusy: trueOrUndefined(resolvedLoading),
+        ariaDisabled: trueOrUndefined(resolvedDisabled),
+        ariaReadOnly: trueOrUndefined(readOnly === true),
       };
     }
     case "none":
@@ -143,9 +189,9 @@ export function resolveGuardedFieldState(params: {
         disabled: disabled === true,
         readOnly: readOnly === true,
         loading: loading === true,
-        ariaBusy: loading === true ? true : undefined,
-        ariaDisabled: disabled === true ? true : undefined,
-        ariaReadOnly: readOnly === true ? true : undefined,
+        ariaBusy: trueOrUndefined(loading === true),
+        ariaDisabled: trueOrUndefined(disabled === true),
+        ariaReadOnly: trueOrUndefined(readOnly === true),
       };
     default:
       return assertNever(blockedState, "GuardedFieldBlockedState");
@@ -160,8 +206,8 @@ export function resolveGuardedLinkState(params: {
   const isDisabled = params.disabled === true || params.isBlocked;
 
   return {
-    ariaDisabled: isDisabled ? true : undefined,
-    tabIndex: isDisabled && params.removeFromTabOrder === true ? -1 : undefined,
+    ariaDisabled: trueOrUndefined(isDisabled),
+    tabIndex: blockedLinkTabIndex(isDisabled, params.removeFromTabOrder),
     onClickShouldPrevent: isDisabled,
   };
 }
@@ -170,7 +216,7 @@ export function resolveGuardedGroupState(
   isBlocked: boolean,
 ): GuardedGroupState {
   return {
-    ariaBusy: isBlocked ? true : undefined,
-    ariaDisabled: isBlocked ? true : undefined,
+    ariaBusy: trueOrUndefined(isBlocked),
+    ariaDisabled: trueOrUndefined(isBlocked),
   };
 }

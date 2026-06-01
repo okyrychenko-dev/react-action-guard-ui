@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
 import type { GuardedScope } from "../types";
 
@@ -19,8 +19,10 @@ export function GuardedScopeProvider({
   children,
   scope,
 }: GuardedScopeProviderProps): ReactNode {
+  const value = useMemo(() => ({ scope }), [scope]);
+
   return (
-    <GuardedScopeContext.Provider value={{ scope }}>
+    <GuardedScopeContext.Provider value={value}>
       {children}
     </GuardedScopeContext.Provider>
   );
@@ -36,5 +38,10 @@ export function useResolvedGuardedScope(
   explicitScope?: GuardedScope,
 ): GuardedScope | undefined {
   const contextScope = useGuardedScope();
+
+  if (Array.isArray(explicitScope) && explicitScope.length === 0) {
+    return contextScope;
+  }
+
   return explicitScope ?? contextScope;
 }

@@ -1,23 +1,18 @@
+import type { GuardedActionState } from "../../types";
 import type {
-  GuardedActionBlockedState,
-  GuardedActionState,
-  GuardedReasonProps,
-  GuardedScopeProps,
-  UseTopBlockerReturn,
-} from "../../types";
+  UseGuardedActionParams,
+  UseGuardedActionReturn,
+} from "../useGuardedAction";
 
-export interface UseGuardedButtonParams<TButtonState = GuardedActionState>
-  extends GuardedScopeProps, GuardedReasonProps {
-  blockedState?: GuardedActionBlockedState;
-  disabled?: boolean;
-  loading?: boolean;
+export interface UseGuardedButtonParams<
+  TButtonState = GuardedActionState,
+> extends Omit<UseGuardedActionParams<TButtonState>, "getActionState"> {
   getButtonState?: (state: GuardedActionState) => TButtonState;
 }
 
-export interface UseGuardedButtonReturn<TButtonState = GuardedActionState> {
-  blocker: UseTopBlockerReturn;
-  isBlocked: boolean;
+export type UseGuardedButtonReturn<TButtonState = GuardedActionState> = Omit<
+  UseGuardedActionReturn<TButtonState>,
+  "actionState"
+> & {
   buttonState: TButtonState;
-  reasonContent: string | null;
-  ariaDescribedBy?: string;
-}
+};

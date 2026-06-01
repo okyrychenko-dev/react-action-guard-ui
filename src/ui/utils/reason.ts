@@ -1,19 +1,36 @@
 import type {
   GuardedFieldReasonMode,
+  GuardedReasonBlocker,
   GuardedReasonMode,
   GuardedReasonResult,
-  UseTopBlockerReturn,
 } from "../types";
 
 export function getGuardedReason(
-  blocker: UseTopBlockerReturn,
+  blocker: GuardedReasonBlocker,
   fallback?: string,
 ): string | null {
   return blocker.reason ?? fallback ?? null;
 }
 
+function shouldLinkReason(
+  mode: GuardedReasonMode | GuardedFieldReasonMode,
+): boolean {
+  return mode === "description" || mode === "helperText";
+}
+
+function getRequiredReasonId(
+  mode: GuardedReasonMode | GuardedFieldReasonMode,
+  reasonId?: string,
+): string {
+  if (reasonId === undefined || reasonId.trim().length === 0) {
+    throw new Error(`reasonId is required when reasonMode is "${mode}"`);
+  }
+
+  return reasonId;
+}
+
 function resolveGuardedReason(params: {
-  blocker: UseTopBlockerReturn;
+  blocker: GuardedReasonBlocker;
   fallback?: string;
   mode: GuardedReasonMode | GuardedFieldReasonMode;
   reasonId?: string;
@@ -28,15 +45,18 @@ function resolveGuardedReason(params: {
     return { ariaDescribedBy: undefined, reasonContent: null };
   }
 
-  return {
-    ariaDescribedBy:
-      params.mode === "description" ? params.reasonId : undefined,
-    reasonContent: reason,
-  };
+  if (shouldLinkReason(params.mode)) {
+    return {
+      ariaDescribedBy: getRequiredReasonId(params.mode, params.reasonId),
+      reasonContent: reason,
+    };
+  }
+
+  return { ariaDescribedBy: undefined, reasonContent: reason };
 }
 
 export function resolveActionReason(params: {
-  blocker: UseTopBlockerReturn;
+  blocker: GuardedReasonBlocker;
   fallback?: string;
   mode: GuardedReasonMode;
   reasonId?: string;
@@ -45,7 +65,7 @@ export function resolveActionReason(params: {
 }
 
 export function resolveFieldReason(params: {
-  blocker: UseTopBlockerReturn;
+  blocker: GuardedReasonBlocker;
   fallback?: string;
   mode: GuardedFieldReasonMode;
   reasonId?: string;

@@ -14,6 +14,11 @@ export interface GuardedFieldReasonProps {
   reasonId?: string;
 }
 
+export interface GuardedReasonBlocker {
+  isBlocked: boolean;
+  reason: string | null;
+}
+
 export interface GuardedReasonResult {
   ariaDescribedBy?: string;
   reasonContent: string | null;

@@ -1,5 +1,6 @@
 import type {
   GuardedFieldReasonMode,
+  GuardedReasonBlocker,
   GuardedReasonMode,
   GuardedReasonResult,
   GuardedScope,
@@ -13,7 +14,7 @@ export type ResolveGuardedControlState<TBaseState> = (
 export type ResolveGuardedControlReason<
   TReasonMode extends GuardedReasonMode | GuardedFieldReasonMode,
 > = (params: {
-  blocker: UseTopBlockerReturn;
+  blocker: GuardedReasonBlocker;
   fallback?: string;
   mode: TReasonMode;
   reasonId?: string;

@@ -1,7 +1,6 @@
-import { type MouseEvent, useCallback, useMemo } from "react";
-import { useResolvedGuardedScope } from "../../context";
+import { type MouseEvent, useCallback } from "react";
 import { resolveActionReason, resolveGuardedLinkState } from "../../utils";
-import { useTopBlocker } from "../useTopBlocker";
+import { useGuardedControl } from "../useGuardedControl";
 import type {
   UseGuardedLinkParams,
   UseGuardedLinkReturn,
@@ -20,22 +19,29 @@ export function useGuardedLink<
     scope,
     stopPropagationWhenBlocked,
   } = params;
-  const resolvedScope = useResolvedGuardedScope(scope);
-  const blocker = useTopBlocker(resolvedScope);
 
-  const linkState = useMemo(
-    () =>
+  const resolveState = useCallback(
+    (isBlocked: boolean) =>
       resolveGuardedLinkState({
         disabled,
-        isBlocked: blocker.isBlocked,
+        isBlocked,
         removeFromTabOrder,
       }),
-    [blocker.isBlocked, disabled, removeFromTabOrder],
+    [disabled, removeFromTabOrder],
   );
+
+  const control = useGuardedControl({
+    reasonFallback,
+    reasonId,
+    reasonMode,
+    resolveReason: resolveActionReason,
+    resolveState,
+    scope,
+  });
 
   const handleClick = useCallback(
     (e: MouseEvent<TElement>) => {
-      if (linkState.onClickShouldPrevent) {
+      if (control.controlState.onClickShouldPrevent) {
         e.preventDefault();
 
         if (stopPropagationWhenBlocked === true) {
@@ -47,26 +53,19 @@ export function useGuardedLink<
 
       onClick?.(e);
     },
-    [linkState.onClickShouldPrevent, onClick, stopPropagationWhenBlocked],
-  );
-
-  const reason = useMemo(
-    () =>
-      resolveActionReason({
-        blocker,
-        fallback: reasonFallback,
-        mode: reasonMode,
-        reasonId,
-      }),
-    [blocker, reasonFallback, reasonId, reasonMode],
+    [
+      control.controlState.onClickShouldPrevent,
+      onClick,
+      stopPropagationWhenBlocked,
+    ],
   );
 
   return {
-    blocker,
-    isBlocked: blocker.isBlocked,
-    linkState,
+    blocker: control.blocker,
+    isBlocked: control.isBlocked,
+    linkState: control.controlState,
     onClick: handleClick,
-    reasonContent: reason.reasonContent,
-    ariaDescribedBy: reason.ariaDescribedBy,
+    reasonContent: control.reasonContent,
+    ariaDescribedBy: control.ariaDescribedBy,
   };
 }
